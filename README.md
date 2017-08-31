@@ -59,7 +59,7 @@ pip install pandas
 #### k8sclient
 ```shell
 git clone https://github.com/zq-david-wang/k8sclient.git
-cd k8sft && pip install -e .
+cd k8sclient && pip install -e .
 ```
 
 Checkout the notebooks for more examples.
