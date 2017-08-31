@@ -1,0 +1,22 @@
+apiVersion: v1
+clusters:
+- cluster:
+    insecure-skip-tls-verify: true
+    server: https://10.19.137.140:6443
+  name: enn-cluster
+
+contexts:
+- context:
+    cluster: enn-cluster
+    user: kube-node
+  name: node-context
+current-context: node-context
+kind: Config
+preferences: {}
+users:
+- name: kube-node
+  user:
+    password: xxx
+    username: IDH02BjXJI8agb1WdPlXf3VaYkRVNQrPaP5OKcbuYe8=
+
+
