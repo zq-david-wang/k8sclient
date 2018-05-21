@@ -37,7 +37,7 @@ def get_pod_restart_count(namespace, name):
 class K8SPodTestCase(unittest.TestCase):
     namespace = "k8sft"
     args = "memcached -m 4096 -u root -v"
-    image = "127.0.0.1:30100/library/memcached:check"
+    image = "ihub.helium.io:30100/library/memcached:check"
     port_number = 11211
     port_name = "clientport"
 

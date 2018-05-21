@@ -2,7 +2,7 @@ from k8sclient.Components import PodBuilder
 from k8sclient.keywords import delete_pod, wait_for_pod_state, SUCCEEDED, remove_pod
 
 namespace = "k8sft"
-image = "127.0.0.1:30100/library/docker-stress"
+image = "ihub.helium.io:30100/library/docker-stress"
 
 
 def deploy(name, node, args):
@@ -12,7 +12,7 @@ def deploy(name, node, args):
         name=name + "-container",
         image=image,
         args=args,
-        limits={'cpu': '0', 'memory': '20Gi'},
+        limits={'cpu': '0', 'memory': '512Mi'},
         requests={'cpu': '0', 'memory': '0'},
     ).set_node(node).deploy()
 
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     # deploy cpu stress
     client_pod_name = "cpu-stress"
     # deploy(client_pod_name, "10.19.137.148", "--cpu 8  --timeout 300s")
-    deploy(client_pod_name, "10.19.137.148", "-m 6 --vm-hang 60 --vm-bytes 2G  --timeout 360s")
+    deploy(client_pod_name, "10.19.137.148", " -m 10 --vm-bytes 128M --timeout 60s --vm-keep")
     wait_for_pod_state(namespace, client_pod_name, timeout=600, expect_status=SUCCEEDED)
     remove_pod(namespace, client_pod_name)
     # time.sleep(120)

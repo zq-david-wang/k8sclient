@@ -35,5 +35,5 @@ def un_deploy():
     rs.un_deploy()
 
 if __name__ == "__main__":
-    # deploy()
-    un_deploy()
+    deploy()
+    # un_deploy()

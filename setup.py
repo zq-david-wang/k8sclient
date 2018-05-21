@@ -53,6 +53,6 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     # install_requires=['kubernetes', 'pandas'],
-    install_requires=['kubernetes',],
+    install_requires=['kubernetes==3.0.0',],
 
 )

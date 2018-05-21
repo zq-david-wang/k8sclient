@@ -110,6 +110,25 @@ def switch_cluster(cluster_name):
     k8sclient.switch_user(cluster_name)
 
 
+# administrator
+def apply_resource_limit(namespace, **kwargs):
+    k8sclient.apply_limit_range(namespace, **kwargs)
+
+
+# pvc
+def list_namespaced_pvc(namespace):
+    return k8sclient.list_namespaced_persistent_volume_claim(namespace)
+
+
+# pv
+def list_persistent_volume():
+    return k8sclient.list_persistent_volume()
+
+
+def list_namespaced_deployment(namespace):
+    return k8sclient.list_namespaced_deployment(namespace)
+
+
 RUNNING = "Running"
 NOT_FOUND = "404"
 SUCCEEDED = "Succeeded"

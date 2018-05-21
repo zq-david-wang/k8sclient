@@ -13,7 +13,7 @@ from k8sclient.Components import (
     EmptyDirVolume
 )
 
-image = "127.0.0.1:30100/library/alpine-fio:v1"
+image = "ihub.helium.io:30100/library/alpine-fio:v1"
 args = "--output-format=json"
 namespace = "monkey"
 nodes = list_ready_nodes()

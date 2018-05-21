@@ -25,7 +25,7 @@ register_cluster("yancheng", "~/.kube/config-yancheng")
 register_cluster("shanghai", "~/.kube/config-shanghai")
 # switch_cluster("yancheng")
 
-image = "127.0.0.1:30100/library/alpine-iperf"
+image = "ihub.helium.io:30100/library/alpine-iperf"
 server_args = "iperf -f M -i 1 -m -s"
 client_args = r"iperf -f M -t 60 -i 1 -c %s"
 namespace = "k8sft"

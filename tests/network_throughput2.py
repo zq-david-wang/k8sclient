@@ -30,11 +30,11 @@ if len(sys.argv) > 1:
 image = "ihub.helium.io:30100/library/alpine-iperf"
 server_args = "iperf -f M -i 1 -m -s"
 client_args = r"iperf -f M -t 10 -i 1 -c %s"
-namespace = "k8sft"
+namespace = "health-check"
 nodes = sorted(list_ready_nodes())
 server_port = ServicePort("serverport", 5001, 5001)
 global_server_name = "iperf-server"
-glimit = {'cpu': '0', 'memory': '8Gi'}
+glimit = {'cpu': '0', 'memory': '0'}
 grequest = {'cpu': '0', 'memory': '0'}
 server_service = ServiceBuilder(global_server_name, namespace).add_port(server_port)
 reports = {}
@@ -113,7 +113,7 @@ def test(server_node, client_node):
     time.sleep(3)
     # get server pod ip
     server_pod_ip = get_pod_ip(namespace, server_pod_name)
-    run_client(client_node, server_node, server_pod_ip)
+    # run_client(client_node, server_node, server_pod_ip)
     run_client(client_node, server_node, global_server_name)
     delete_pod(namespace, server_pod_name)
     wait_for_pod_state(namespace, server_pod_name, timeout=240, expect_status=NOT_FOUND)
@@ -186,42 +186,12 @@ def cleanup():
     cleanup_services(namespace)
 
 
-cleanup()
+# cleanup()
 server_service.deploy(force=True)
-# test all node pair
-for node in nodes:
-    run_server(node)
-# test random pair of node
 
-# for i in range(2):
-#    test(*random.sample(nodes, 2))
-# 10.19.137.154
-# 10.19.137.141
-# 10.19.137.140
-# 10.19.137.142
-# 10.19.137.144
-# 10.19.137.153
-# 10.19.137.151
-# 10.19.137.150
-# 10.19.137.149
-# 10.19.137.148
-# 10.19.137.147
-# 10.19.140.15
-# 10.19.140.4
-# 10.19.137.152
-# 10.19.137.146
-# 10.19.137.145
-# 10.19.137.143
-# test("10.19.140.15", "10.19.137.154")
-# test("10.19.137.141", "10.19.140.4")
-# test("10.19.137.140", "10.19.137.142")
-# test("10.19.137.140", "10.19.137.141")
-# test("10.19.137.140", "10.19.137.143")
-# test("10.19.137.142", "10.19.137.140")
-# test("10.19.137.140", "10.19.137.142")
-# test("10.19.137.143", "10.19.137.148")
-# test("10.19.137.148", "10.19.137.143")
-# test("10.19.137.148", "10.19.137.140")
-# test("10.19.137.140", "10.19.137.140")
-save_report()
+
+# test("10.19.137.140", "10.19.137.153")
+# test("10.19.137.147", "10.19.137.149")
+test("10.19.140.5", "10.19.140.8")
+
 server_service.un_deploy()

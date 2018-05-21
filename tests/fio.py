@@ -14,13 +14,13 @@ from k8sclient.Components import (
     EmptyDirVolume
 )
 
-image = "127.0.0.1:30100/library/alpine-fio:v1"
+image = "ihub.helium.io:30100/library/alpine-fio:v1"
 args = "--output-format=json"
 namespace = "monkey"
 nodes = list_ready_nodes()
 FIO_DIR = "/mnt/fio"
 ceph_monitors = "10.19.137.144:6789,10.19.137.145:6789,10.19.137.146:6789"
-ceph_pool = "monkey"
+ceph_pool = "k8s.monkey"
 ceph_fstype = "xfs"
 ceph_secret = "ceph-secret"  # need create beforehand
 # must match the regex [a-z0-9]([-a-z0-9]*[a-z0-9])?
@@ -45,11 +45,12 @@ rbd = RBDVolume(
     )
 
 volumes = {
-    "empty_dir": empty_dir,
+    # "empty_dir": empty_dir,
     "rbd": rbd,
-    "ceph_fs": ceph_fs
+    # "ceph_fs": ceph_fs
 }
 io_engines = ["libaio", "mmap", "posixaio", "sync"]
+# io_engines = ["mmap"]
 
 
 def test(node):
@@ -69,8 +70,8 @@ def test(node):
                 pod_name + "-container",
                 image=image,
                 args=args,
-                limits={'cpu': '1', 'memory': '500Mi'},
-                requests={'cpu': '0', 'memory': '0'},
+                limits={'cpu': '1', 'memory': '8Gi'},
+                requests={'cpu': '200m', 'memory': '256Mi'},
                 volumes=[v],
                 FIO_DIR=FIO_DIR,
                 IOENGINE=e
@@ -94,4 +95,5 @@ def test(node):
             })
     return reports
 
-r = test(nodes[0])
+# r = test("10.19.138.182")
+r = test("10.19.137.154")

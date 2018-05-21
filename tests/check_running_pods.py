@@ -20,7 +20,7 @@ import time
 
 nodes = list_ready_nodes()
 namespace = "health-check"
-image = "127.0.0.1:30100/library/memcached:check2"
+image = "ihub.helium.io:30100/library/memcached:check2"
 args = "memcached -m 1028 -u root -v"
 # node_marks = {n: "-".join(n.split(".")) for n in nodes}
 

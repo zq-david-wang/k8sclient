@@ -24,7 +24,7 @@ register_cluster("shanghai", "~/.kube/config-shanghai")
 parser = argparse.ArgumentParser()
 parser.add_argument("--cluster", type=str, help="Which cluster is under testing.", default="shanghai")
 parser.add_argument("--batchsize", type=int, help="parallel degree.", default=6)
-parser.add_argument("--namespace", type=str, help="parallel degree.", default="health-check")
+parser.add_argument("--namespace", type=str, help="namespace used for the test", default="health-check")
 args = parser.parse_args()
 
 cluster = args.cluster
@@ -39,7 +39,7 @@ uid = datetime.datetime.now().strftime("-%Y-%m-%d-%H-%M-%S")
 # uid = "-2017-08-23-16-27-17"
 namespace = args.namespace
 global_service_name = namespace + uid
-image = "127.0.0.1:30100/library/memcached:check3"
+image = "ihub.helium.io:30100/library/memcached:check3"
 args = "memcached -m 1028 -u root -v"
 client_port = ServicePort("clientport", 11211, 11211)
 global_service = ServiceBuilder(global_service_name, namespace).add_port(client_port)
@@ -66,7 +66,8 @@ def deploy(node):
             image=image,
             args=args,
             ports=[client_port],
-            requests={'cpu': '0', 'memory': '0'}
+            requests={'cpu': '0', 'memory': '0'},
+            limits={'cpu': '0', 'memory': '0'}
         ).attache_service(
             service
         ).attache_service(
@@ -118,7 +119,7 @@ if __name__ == "__main__":
             print n
 
     print "wait for everything ready"
-    time.sleep(20)
+    time.sleep(180)
     print "Start testing among ready nodes"
     error_mark = False
     # start multiple process to check

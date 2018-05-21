@@ -165,13 +165,20 @@ class K8SClient(object):
     # node apis
     def list_ready_nodenames(self):
         r = []
+        notready = []
         for n in self.apiV1.list_node().items:
             if n.spec.unschedulable:
+                print n.metadata.name, "is cordoned."
                 continue
+            ready = False
             for c in n.status.conditions:
                 if c.type == "Ready" and c.status == 'True':
                     r.append(n.metadata.name)
+                    ready = True
                     break
+            if not ready:
+                notready.append(n.metadata.name)
+        assert not notready, ",".join(notready) + " NotReady"
         return r
 
     def get_nodes(self):
@@ -209,17 +216,28 @@ class K8SClient(object):
             _request_timeout=timeout
         )
 
-    def apply_limit_range(self, namespace):
+    def apply_limit_range(self, namespace,
+                          default_request_cpu="300m",
+                          default_request_memory="512Mi",
+                          default_limit_cpu="1",
+                          default_limit_memory="4Gi",
+                          min_cpu="200m",
+                          min_memory="256Mi",
+                          replace=True
+                          ):
         name = "rlimit"
         limit_range = V1LimitRange(
             metadata=V1ObjectMeta(name=name, namespace=namespace),
             spec=V1LimitRangeSpec(limits=[V1LimitRangeItem(
-                default={"cpu": "1", "memory": "4G"},
-                default_request={"cpu": "300m", "memory": "500Mi"},
+                default={"cpu": default_limit_cpu, "memory": default_limit_memory},
+                default_request={"cpu": default_request_cpu, "memory": default_request_memory},
+                min={"cpu": min_cpu, "memory": min_memory},
                 type="Container"
             )])
         )
         if self.apiV1.list_namespaced_limit_range(namespace).items:
+            if not replace:
+                return
             return self.apiV1.replace_namespaced_limit_range(name=name, namespace=namespace, body=limit_range)
         else:
             return self.apiV1.create_namespaced_limit_range(namespace, body=limit_range)
@@ -238,6 +256,15 @@ class K8SClient(object):
 
     def list_all_services(self):
         return self.apiV1.list_service_for_all_namespaces().items
+
+    def list_namespaced_persistent_volume_claim(self, namespace):
+        return self.apiV1.list_namespaced_persistent_volume_claim(namespace).items
+
+    def list_persistent_volume(self):
+        return self.apiV1.list_persistent_volume().items
+
+    def list_namespaced_deployment(self, namespace):
+        return self.apiV1beta1.list_namespaced_deployment(namespace).items
 
 
 k8sclient = K8SClient()

@@ -6,6 +6,8 @@ from .keywords import (
     list_all_services,
     list_namespaced_endpoints,
     list_all_endpoints,
+    list_namespaced_pvc,
+    list_persistent_volume,
 )
 import pandas as pd
 import re
@@ -31,7 +33,7 @@ memory_parser = {
 def parse_resource(resource, parser):
     m = resource_pattern.match(resource)
     if not m:
-        return 0
+        return -1
     r = parser[m.group(2)](m.group(1))
     return r
 
@@ -40,6 +42,10 @@ def _parse_pod(pod):
     """return dict for pod, containers, volumes, mounts, labels"""
     pod_id = pod.metadata.uid
     labels = []
+    annotations = ""
+    if hasattr(pod.metadata, "annotations") and pod.metadata.annotations:
+        annotations = ",".join(["%s=%s" % (k, v) for k, v in pod.metadata.annotations.items()])
+
     if hasattr(pod.metadata, "labels") and pod.metadata.labels:
         for k, v in pod.metadata.labels.items():
             labels.append({"name": k, "value": v, "pod_id": pod_id})
@@ -72,7 +78,8 @@ def _parse_pod(pod):
                 "lmemory": parse_resource(c.resources.limits['memory'], memory_parser) if c.resources.limits and 'memory' in c.resources.limits else 0,
                 "state": "unknown",
                 "restart_count": 0,
-                "pod_id": pod_id
+                "pod_id": pod_id,
+                'gpu': "alpha.kubernetes.io/nvidia-gpu" in c.resources.requests
 
             })
             if c.env:
@@ -96,18 +103,30 @@ def _parse_pod(pod):
     if hasattr(pod.status, "container_statuses") and pod.status.container_statuses:
         for cs in pod.status.container_statuses:
             _state = "unknown"
+            _state_message = "OK"
+            _state_reason = "NA"
             if cs.state.running:
                 _state = "running"
             elif cs.state.terminated:
                 _state = "terminated"
+                _state_message = cs.state.terminated.message
+                _state_reason = cs.state.terminated.reason
             elif cs.state.waiting:
                 _state = "waiting"
+                _state_message = cs.state.waiting.message
+                _state_reason = cs.state.waiting.reason
+
+            if not _state_message:
+                _state_message = "NA"
 
             for c in containers:
                 if c['name'] == cs.name:
                     c['ready'] = cs.ready
                     c['restart_count'] = cs.restart_count
                     c['state'] = _state
+                    c['state_message'] = _state_message
+                    c['state_reason'] = _state_reason
+                    c['docker_id'] = cs.container_id
                     break
 
     if hasattr(pod.spec, "volumes") and pod.spec.volumes:
@@ -138,6 +157,8 @@ def _parse_pod(pod):
         "pod_ip": pod.status.pod_ip,
         "phase": pod.status.phase,
         "stime": pod.status.start_time,
+        "annotations": annotations,
+        "qos_class": pod.status.qos_class
     }])
     labeldf = pd.DataFrame(labels)
     ownerdf = pd.DataFrame(owners)
@@ -236,7 +257,8 @@ def _collect_services(services):
             "uid": s.metadata.uid,
         }
         sinfo.append(info)
-        ports += [_parse_port(p, s.metadata.uid) for p in s.spec.ports]
+        if s.spec.ports:
+            ports += [_parse_port(p, s.metadata.uid) for p in s.spec.ports]
         if s.spec.external_i_ps:
             eips += [_parse_external_ips(p, s.metadata.uid) for p in s.spec.external_i_ps]
     return pd.DataFrame(sinfo), pd.DataFrame(ports), pd.DataFrame(eips)
@@ -266,7 +288,7 @@ def _collect_endpoints(endpoints):
         infos.append(info)
         if hasattr(e, "subsets") and e.subsets:
             for s in e.subsets:
-                if not s.addresses :
+                if not s.addresses:
                     continue
                 addresses = []
                 ports = []
@@ -304,3 +326,63 @@ def collect_namespaced_endpoints(namespace):
 
 def collect_all_endpoints():
     return _collect_endpoints(list_all_endpoints())
+
+
+storage_parser = {
+    'Gi': lambda x: int(1024*1024*1024*float(x)),
+    'G': lambda x: int(1000*1000*1000*float(x)),
+    "Mi": lambda x: int(1024*1024*float(x)),
+    "M": lambda x: int(1000*1000*float(x)),
+    "Ki": lambda x: int(1024*float(x)),
+    "K": lambda x: int(1000*float(x)),
+    "": lambda x: int(x)
+}
+
+
+def _collect_pvc(pvcs):
+    infos = []
+    for pvc in pvcs:
+        info = {
+            'namespace': pvc.metadata.namespace,
+            'creation_timestamp': pvc.metadata.creation_timestamp,
+            'name': pvc.metadata.name,
+            'access_modes': str(pvc.status.access_modes),
+            'capacity': pvc.status.capacity['storage'] if pvc.status.capacity else "?",
+            'phase': pvc.status.phase,
+            'volume_name': pvc.spec.volume_name,
+        }
+        infos.append(info)
+    return pd.DataFrame(infos)
+
+
+def collect_namespaced_pvc(namespace):
+    return _collect_pvc(list_namespaced_pvc(namespace=namespace))
+
+
+def _collect_pv(pvs):
+    infos = []
+    for pv in pvs:
+        pv_type = "host_path"
+        if pv.spec.rbd:
+            pv_type = "rbd"
+        claim_namespace = "NA"
+        claim_name = "NA"
+        if pv.spec.claim_ref:
+            claim_namespace = pv.spec.claim_ref.namespace
+            claim_name = pv.spec.claim_ref.name
+        capacity = parse_resource(pv.spec.capacity['storage'], storage_parser)
+        assert capacity > 0, pv.spec.capacity['storage']
+        info = {
+            'creation_timestamp': pv.metadata.creation_timestamp,
+            'name': pv.metadata.name,
+            "type": pv_type,
+            'capacity': capacity,
+            "claim_namespace": claim_namespace,
+            "claim_name": claim_name,
+        }
+        infos.append(info)
+    return pd.DataFrame(infos)
+
+
+def collect_pv():
+    return _collect_pv(list_persistent_volume())

@@ -18,12 +18,13 @@ import random
 import time
 import sys
 import re
-
+"""
 register_cluster("yancheng", "~/.kube/config-yancheng")
 register_cluster("shanghai", "~/.kube/config-shanghai")
 
 if len(sys.argv) > 1:
     switch_cluster(sys.argv[1])
+"""
 
 nodes = list_ready_nodes()
 uid = datetime.datetime.now().strftime("-%Y-%m-%d-%H-%M-%S")

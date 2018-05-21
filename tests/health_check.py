@@ -7,7 +7,7 @@ global_service = "health-check" + uid
 node_names = k8sclient.list_ready_nodenames()
 # node_names = [n for n in node_names if n != "10.19.140.12"]
 namespace = "health-check"
-image = "127.0.0.1:30100/library/memcached:check"
+image = "ihub.helium.io:30100/library/memcached:check"
 args = "memcached -m 4096 -u root -v"
 port_number = 11211
 port_name = "clientport"
